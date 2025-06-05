@@ -23,8 +23,8 @@ export default function Index() {
           router.replace('/PinScreen');
         } 
         else if (userToken) {
-          // If token exists, navigate to HomeScreen
-          router.replace('/home');
+          // If token exists, navigate to OrdersScreen
+          router.replace('/orders');
         } else {
           // Else, navigate to AuthScreen
           router.replace('/AuthScreen');

@@ -1,42 +1,53 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, StatusBar, Switch } from 'react-native';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Switch } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { colors } from '../Styles/appStyle';
 import { AppContext } from '../../context/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRouter } from 'expo-router';
 import { getProfileInfo } from '../services/authServices';
-import ConfirmationModal from '../components/ConfirmationModal'
+import ConfirmationModal from '../components/ConfirmationModal';
 import HeaderComponent from './HeaderComponent';
+import { customerDetail } from '../services/productServices';
 
 const ProfileScreen = () => {
-  // Profile data
-  const profile = {
-    id: 52,
-    name: "ABCD",
-    email_id: "xyz@gmail.com",
-    mobile_number: "1234567890",
-    gstn_number: "",
-    contact_name: "XYZ",
-    address_line_1: "aaaa",
-    address_line_2: "bbb",
-    is_supplier: false,
-    image: "https://my-office-docs.s3.amazonaws.com/media/default_customer.jpg",
-    customer_type: "R",
-    customer_group: "Industry Type",
-    outstanding_amt: 0,
-    no_of_task: 1,
-    no_of_pi: 0
-  };
+  const [profile, setprofile] = useState({});
   const { logout } = useContext(AppContext);
   const [userPin, setUserPin] = useState(null);
   const [profileImg, setProfileImg] = useState({});
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   const router = useRouter();
   const navigation = useNavigation();
 
-  // Load user pin and biometric setting from AsyncStorage
+  const fetchCustomerDetails = useCallback(async () => {
+    try {
+      const customerId = await AsyncStorage.getItem('Customer_id');
+      if (!customerId) {
+        console.log('Customer ID not found in AsyncStorage');
+        return;
+      }
+
+      const res = await customerDetail(customerId);
+      if (!res || !res.data) {
+        console.log('No data returned from customerDetail API');
+        return;
+      }
+
+      // Handle both array and object responses
+      const customerData = Array.isArray(res.data) ? res.data[0] : res.data;
+      if (customerData) {
+        setprofile(customerData);
+      } else {
+        console.log('No customer data found in response');
+      }
+    } catch (error) {
+      console.error('Failed to fetch Customer Details:', error.message);
+      console.error('Customer Detail Error Details:', error);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -44,58 +55,68 @@ const ProfileScreen = () => {
         setUserPin(storedPin);
 
         const biometric = await AsyncStorage.getItem('userBiometric');
-        setBiometricEnabled(biometric === 'true'); // Convert string to boolean
+        setBiometricEnabled(biometric === 'true');
       } catch (error) {
-        console.error('Error loading user data:', error);
+        console.error('Error loading user data:', error.message);
       }
     };
     fetchUserData();
+    fetchCustomerDetails();
+  }, [fetchCustomerDetails]);
+
+  useEffect(() => {
+    const fetchProfileInfo = async () => {
+      try {
+        const res = await getProfileInfo();
+        if (!res || !res.data) {
+          console.log('No data returned from getProfileInfo API');
+          return;
+        }
+
+        const profileData = res.data;
+        if (profileData) {
+          setProfileImg(profileData);
+          setIsManager(profileData.user_group?.is_manager || false);
+        } else {
+          console.log('No profile data found in response');
+        }
+      } catch (error) {
+        console.error('Error fetching profile info:', error.message);
+        console.error('Profile Info Error Details:', error);
+        // Set default values in case of error
+        setProfileImg({});
+        setIsManager(false);
+      }
+    };
+    fetchProfileInfo();
   }, []);
 
-  const handlePressPassword = () => {
-    router.push({ pathname: 'ResetPassword' });
-  };
-
-  // const handlePressFAQ = () => {
-  //   console.log("Press FAQ button");
-  // };
-
-  // const handlePressMessage = () => {
-  //   console.log("Press Message button");
-  // };
-
-    const handleBack = () => {
-    navigation.goBack();
-  };
-  
-
-    useEffect(() => {
-    getProfileInfo().then((res) => {
-      // console.log("datata", res.data);
-      
-      setProfileImg(res.data);      
-      setIsManager(res.data.user_group.is_manager);
-    });
-  }, []);
-
-    // Handle biometric toggle change
   const handleBiometricToggle = async (value) => {
     try {
       setBiometricEnabled(value);
       if (value) {
         await AsyncStorage.setItem('userBiometric', 'true');
       } else {
-        await AsyncStorage.removeItem('userBiometric'); // Remove key when disabled
+        await AsyncStorage.removeItem('userBiometric');
       }
     } catch (error) {
-      console.error('Error updating biometric setting:', error);
-      // Revert state if AsyncStorage fails
+      console.error('Error updating biometric setting:', error.message);
       setBiometricEnabled(!value);
     }
   };
 
-  // Format address based on available lines
+  const handlePressPassword = () => {
+    router.push({ pathname: 'ResetPassword' });
+  };
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   const formatAddress = () => {
+    if (!profile) {
+      return 'No address available';
+    }
     if (profile.address_line_1 && profile.address_line_2) {
       return `${profile.address_line_1}, ${profile.address_line_2}`;
     } else if (profile.address_line_1) {
@@ -103,48 +124,32 @@ const ProfileScreen = () => {
     } else if (profile.address_line_2) {
       return profile.address_line_2;
     }
-    return "No address available";
+    return 'No address available';
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <StatusBar barStyle="light-content" backgroundColor={colors.primary} /> */}
-      
-      {/* Header */}
-       <HeaderComponent
+      <HeaderComponent
         headerTitle="Update Your PIN"
         onBackPress={() => router.back()}
-      /> 
-      
+      />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Banner */}
         <View style={styles.profileBanner}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={{ uri: profileImg?.image }}
+              source={{ uri: profileImg?.image || 'https://via.placeholder.com/100' }}
               style={styles.profileImage}
-              // defaultSource={require('expo-asset:/placeholder.png')}
             />
-            {/* <TouchableOpacity style={styles.cameraButton}>
-              <Ionicons name="camera" size={18} color={colors.white} />
-            </TouchableOpacity> */}
           </View>
-          
-          <Text style={styles.profileName}>{profile.name}</Text>
+          <Text style={styles.profileName}>{profile.name || 'N/A'}</Text>
           <View style={styles.badgeContainer}>
-            {/* <View style={styles.badge}>
-              <Text style={styles.badgeText}>Tasks: {profile.no_of_task}</Text>
-            </View> */}
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{profile.customer_group}</Text>
+              <Text style={styles.badgeText}>{profile.customer_group || 'N/A'}</Text>
             </View>
           </View>
         </View>
-        
-        {/* Contact Information */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
-          
           <View style={styles.contactCard}>
             <View style={styles.contactItem}>
               <View style={styles.iconContainer}>
@@ -152,24 +157,20 @@ const ProfileScreen = () => {
               </View>
               <View style={styles.contactDetails}>
                 <Text style={styles.contactLabel}>Email</Text>
-                <Text style={styles.contactValue}>{profile.email_id}</Text>
+                <Text style={styles.contactValue}>{profile.email_id || 'N/A'}</Text>
               </View>
             </View>
-            
             <View style={styles.divider} />
-            
             <View style={styles.contactItem}>
               <View style={styles.iconContainer}>
                 <MaterialIcons name="phone" size={22} color={colors.primary} />
               </View>
               <View style={styles.contactDetails}>
                 <Text style={styles.contactLabel}>Phone</Text>
-                <Text style={styles.contactValue}>{profile.mobile_number}</Text>
+                <Text style={styles.contactValue}>{profile.mobile_number || 'N/A'}</Text>
               </View>
             </View>
-            
             <View style={styles.divider} />
-            
             <View style={styles.contactItem}>
               <View style={styles.iconContainer}>
                 <MaterialIcons name="location-on" size={22} color={colors.primary} />
@@ -179,7 +180,6 @@ const ProfileScreen = () => {
                 <Text style={styles.contactValue}>{formatAddress()}</Text>
               </View>
             </View>
-            
             {profile.contact_name && (
               <>
                 <View style={styles.divider} />
@@ -196,13 +196,9 @@ const ProfileScreen = () => {
             )}
           </View>
         </View>
-        
-        {/* Account Options */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Account Options</Text>
-          
           <View style={styles.optionsContainer}>
-              {/* Biometric Authentication */}
             <View style={styles.optionItem}>
               <View style={styles.optionIconContainer}>
                 <MaterialIcons name="fingerprint" size={22} color={colors.primary} />
@@ -220,10 +216,7 @@ const ProfileScreen = () => {
                 thumbColor={biometricEnabled ? colors.primary : colors.white}
               />
             </View>
-
             <View style={styles.optionDivider} />
-
-            {/* Set Pin */}
             <TouchableOpacity style={styles.optionItem} onPress={handlePressPassword}>
               <View style={styles.optionIconContainer}>
                 <MaterialIcons name="lock" size={22} color={colors.primary} />
@@ -234,24 +227,7 @@ const ProfileScreen = () => {
               </View>
               <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-            
             <View style={styles.optionDivider} />
-            
-            {/* FAQ */}
-            {/* <TouchableOpacity style={styles.optionItem} onPress={handlePressFAQ}>
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="help" size={22} color={colors.primary} />
-              </View>
-              <View style={styles.optionTextContainer}>
-                <Text style={styles.optionText}>FAQ</Text>
-                <Text style={styles.optionDescription}>Frequently asked questions</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
-            </TouchableOpacity> */}
-            
-            <View style={styles.optionDivider} />
-            
-            {/* Logout */}
             <TouchableOpacity style={styles.optionItem} onPress={() => setIsLogoutModalVisible(true)}>
               <View style={[styles.optionIconContainer, { backgroundColor: colors.errorTransparent }]}>
                 <MaterialIcons name="logout" size={22} color={colors.error} />
@@ -265,26 +241,18 @@ const ProfileScreen = () => {
           </View>
         </View>
       </ScrollView>
-      
-      {/* Contact Button */}
-      {/* <TouchableOpacity style={styles.fab} onPress={handlePressMessage}>
-        <MaterialIcons name="message" size={24} color={colors.white} />
-      </TouchableOpacity> */}
-
-        <ConfirmationModal
-        visible={isLogoutModalVisible} // Ensure this prop is correctly passed
+      <ConfirmationModal
+        visible={isLogoutModalVisible}
         message="Are you sure you want to logout?"
         onConfirm={() => {
-          setIsLogoutModalVisible(false); // Close the modal
-          logout(); // Perform the logout action
+          setIsLogoutModalVisible(false);
+          logout();
         }}
-        onCancel={() => setIsLogoutModalVisible(false)} // Close the modal on cancel
+        onCancel={() => setIsLogoutModalVisible(false)}
         confirmText="Logout"
         cancelText="Cancel"
       />
     </SafeAreaView>
-
-    
   );
 };
 
@@ -292,30 +260,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundDark,
-  },
-  header: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  headerTitle: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  backButton: {
-    padding: 4,
-  },
-  editButton: {
-    padding: 4,
   },
   scrollView: {
     flex: 1,
@@ -339,19 +283,6 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 3,
-    borderColor: colors.white,
-  },
-  cameraButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: colors.primary,
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
     borderColor: colors.white,
   },
   profileName: {
@@ -427,9 +358,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '500',
   },
-  actionButton: {
-    padding: 8,
-  },
   divider: {
     height: 1,
     backgroundColor: colors.muted,
@@ -478,22 +406,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.muted,
     marginLeft: 68,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    backgroundColor: colors.primary,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
 });
 

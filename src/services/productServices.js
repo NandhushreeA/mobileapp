@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, userLoginURL, setUserPinURL } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, userLoginURL, setUserPinURL, getCustomerDetailListURL, OrderListURL, addCustomerTicketURL,   } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost, authAxiosPosts } from "./HttpMethod";
 
 export function getEmpLeave(leave_type , emp_id, year) {
@@ -132,3 +132,57 @@ export async function setUserPinView(o_pin, n_pin) {
     throw error;
   }
 } 
+// TO fetch the Customer details 
+export async function customerDetail(customerId) {
+  try {
+    const url = await getCustomerDetailListURL();
+    const data = { customer_id: customerId };
+    return authAxios(url, data);
+  } catch (error) {
+    console.error('Error in customerDetail:', error);
+    throw error;
+  }
+}
+//To fetch the order details from the customer
+export async function order_list(customer_id) {
+  const url = await  OrderListURL(); 
+  let data = {};
+  if (customer_id){
+    data['customer_id']=customer_id
+  }
+  return authAxios(url,data);
+}
+export async function customerTicket(payload) {
+  const url = await  addCustomerTicketURL(); 
+  let data = payload;
+  return authAxiosPosts(url, data);
+}
+
+export async function submitCustomerTicket(formData) {
+    try {
+        const url = await addCustomerTicketURL();
+        if (!url) {
+            throw new Error('Failed to get ticket submission URL');
+        }
+        // Use authAxiosFilePost for sending FormData
+        const response = await authAxiosFilePost(url, formData);
+        if (!response || !response.data) {
+            // Handle cases where the response data might be empty but the status is ok
+             if (response && response.status >= 200 && response.status < 300) {
+                 return { data: { success: true, message: "Ticket submitted successfully (no data in response)" } };
+             } else {
+                throw new Error('No data or unexpected response received from ticket submission API');
+             }
+        }
+         // Assuming the backend sends a success flag
+        if (response.data.success === false && response.data.message) {
+             throw new Error(response.data.message);
+        }
+        return response;
+    } catch (error) {
+        console.error('Error in submitCustomerTicket:', error.response?.data || error.message);
+        // Propagate the error with a user-friendly message
+        const userMessage = error.response?.data?.message || error.message || 'Failed to submit ticket';
+        throw new Error(userMessage);
+    }
+}

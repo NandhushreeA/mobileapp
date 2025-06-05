@@ -1,9 +1,21 @@
 import { authAxios, authAxiosGET } from "./HttpMethod";
-import { profileInfoURL, companyInfoURL, getDbList, } from "./ConstantServies";
+import { profileInfoURL, companyInfoURL, getDbList } from "./ConstantServies";
 
-export function getProfileInfo() {
-    // console.log('getProfileInfo')
-    return authAxios(profileInfoURL)
+export async function getProfileInfo() {
+    try {
+        const url = await profileInfoURL();
+        if (!url) {
+            throw new Error('Failed to get profile info URL');
+        }
+        const response = await authAxios(url);
+        if (!response || !response.data) {
+            throw new Error('No data received from profile info API');
+        }
+        return response;
+    } catch (error) {
+        console.error('Error in getProfileInfo:', error);
+        throw error;
+    }
 }
 
 export function getCompanyInfo() {

@@ -1,206 +1,235 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList, ScrollView, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import warrantyData from '../../data.json'; // Updated import path
 
-export default function AMCDetailsScreen() {
-  const [selectedSection, setSelectedSection] = useState(null);
+const App = () => {
+  const { customerName, invoiceNumber, warrantyDetails } = warrantyData;
 
-  // Static AMC data
-  const amcDetails = {
-    nextScheduledDate: '2025-08-15',
-    warrantyStatus: 'Active',
-    renewalDetails: {
-      startDate: '2025-09-01',
-      endDate: '2026-08-31',
-      productname: 'Solar panel',
-    },
-  };
-
-  const getStatusColor = (status) => {
-    return status === 'Active' ? '#10B981' : '#EF4444';
-  };
-
-  const getStatusIcon = (status) => {
-    return status === 'Active' ? 'check-circle' : 'error';
-  };
-
-  const renderSection = (title, content, icon, sectionKey) => {
-    const isSelected = selectedSection === sectionKey;
-
-    return (
-      <TouchableOpacity
-        onPress={() => setSelectedSection(isSelected ? null : sectionKey)}
-        style={styles.section}
-        activeOpacity={0.7}
-      >
-        <LinearGradient
-          colors={['#ffffff', '#f8fafc']}
-          style={styles.sectionGradient}
-        >
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <MaterialIcons name={icon} size={24} color="#2563eb" style={styles.sectionIcon} />
-              <Text style={styles.sectionTitle}>{title}</Text>
-            </View>
-            <MaterialIcons
-              name={isSelected ? 'expand-less' : 'expand-more'}
-              size={24}
-              color="#64748b"
-            />
-          </View>
-          
-          {isSelected && (
-            <View style={styles.sectionContent}>
-              {content}
-            </View>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  };
-
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <LinearGradient
-        colors={['#2563eb', '#1d4ed8']}
-        style={styles.header}
-      >
-        <Text style={styles.title}>AMC Details</Text>
-        <View style={styles.statusContainer}>
-          <MaterialIcons
-            name={getStatusIcon(amcDetails.warrantyStatus)}
-            size={24}
-            color={getStatusColor(amcDetails.warrantyStatus)}
-          />
-          <Text style={[styles.statusText, { color: getStatusColor(amcDetails.warrantyStatus) }]}>
-            {amcDetails.warrantyStatus}
+  const renderServiceItem = ({ item }) => (
+    <View style={styles.serviceCard}>
+      <View style={styles.serviceHeader}>
+        <MaterialIcons 
+          name={item.status === 'Completed' ? 'check-circle' : 'schedule'} 
+          size={24} 
+          color={item.status === 'Completed' ? '#16a34a' : '#f59e0b'} 
+        />
+        <Text style={styles.serviceDate}>{item.date}</Text>
+      </View>
+      <View style={styles.serviceDetails}>
+        <Text style={styles.serviceType}>{item.type}</Text>
+        <View style={[
+          styles.statusBadge,
+          { backgroundColor: item.status === 'Completed' ? '#dcfce7' : '#fef3c7' }
+        ]}>
+          <Text style={[
+            styles.statusText,
+            { color: item.status === 'Completed' ? '#16a34a' : '#f59e0b' }
+          ]}>
+            {item.status}
           </Text>
         </View>
-      </LinearGradient>
-
-      {renderSection(
-        'Next Scheduled AMC',
-        <View style={styles.detailContainer}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Date</Text>
-            <Text style={styles.detailValue}>{amcDetails.nextScheduledDate}</Text>
-          </View>
-        </View>,
-        'event',
-        'nextScheduled'
-      )}
-
-      {renderSection(
-        'Renewal Details',
-        <View style={styles.detailContainer}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Start Date</Text>
-            <Text style={styles.detailValue}>{amcDetails.renewalDetails.startDate}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>End Date</Text>
-            <Text style={styles.detailValue}>{amcDetails.renewalDetails.endDate}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Product</Text>
-            <Text style={styles.detailValue}>{amcDetails.renewalDetails.productname}</Text>
-          </View>
-        </View>,
-        'update',
-        'renewal'
-      )}
-    </ScrollView>
+      </View>
+    </View>
   );
-}
 
-const { width } = Dimensions.get('window');
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* AMC Details Heading */}
+        <View style={styles.headerContainer}>
+          <MaterialIcons name="assignment" size={32} color="#2563eb" />
+          <Text style={styles.headerTitle}>AMC Details</Text>
+        </View>
+
+        {/* Customer Info Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <MaterialIcons name="person" size={24} color="#2563eb" />
+            <Text style={styles.cardTitle}>Customer Information</Text>
+          </View>
+          <Text style={styles.customerName}>{customerName}</Text>
+          <Text style={styles.invoiceNumber}>Invoice #{invoiceNumber}</Text>
+        </View>
+
+        {/* Warranty Details Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <MaterialIcons name="verified" size={24} color="#2563eb" />
+            <Text style={styles.cardTitle}>Warranty Details</Text>
+          </View>
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Product</Text>
+              <Text style={styles.detailValue}>{warrantyDetails.productName}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Model</Text>
+              <Text style={styles.detailValue}>{warrantyDetails.modelNumber}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status</Text>
+              <View style={[styles.statusBadge, { backgroundColor: '#dcfce7' }]}>
+                <Text style={[styles.statusText, { color: '#16a34a' }]}>
+                  {warrantyDetails.status}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Installation</Text>
+              <Text style={styles.detailValue}>{warrantyDetails.installationDate}</Text>
+            </View>
+          </View>
+          <View style={styles.warrantyPeriod}>
+            <MaterialIcons name="date-range" size={20} color="#64748b" />
+            <Text style={styles.warrantyText}>
+              Warranty Period: {warrantyDetails.warrantyFromDate} → {warrantyDetails.warrantyDueDate}
+            </Text>
+          </View>
+        </View>
+
+        {/* Service History Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <MaterialIcons name="history" size={24} color="#2563eb" />
+            <Text style={styles.cardTitle}>Service History</Text>
+          </View>
+          <FlatList
+            data={warrantyDetails.serviceHistory}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderServiceItem}
+            scrollEnabled={false}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  header: {
-    padding: 24,
-    paddingTop: 40,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 16,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 8,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  section: {
-    margin: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  sectionGradient: {
+  container: {
+    flex: 1,
     padding: 16,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitleContainer: {
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 4,
   },
-  sectionIcon: {
-    marginRight: 12,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginLeft: 12,
   },
-  sectionTitle: {
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1e293b',
+    marginLeft: 8,
   },
-  sectionContent: {
+  customerName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  invoiceNumber: {
+    fontSize: 16,
+    color: '#64748b',
+    marginBottom: 8,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  detailItem: {
+    flex: 1,
+    minWidth: '45%',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: '#1e293b',
+    fontWeight: '500',
+  },
+  warrantyPeriod: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
   },
-  detailContainer: {
-    gap: 12,
+  warrantyText: {
+    fontSize: 14,
+    color: '#64748b',
+    marginLeft: 8,
   },
-  detailRow: {
+  serviceCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  serviceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  serviceDate: {
+    fontSize: 14,
+    color: '#64748b',
+    marginLeft: 8,
+  },
+  serviceDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  detailLabel: {
-    fontSize: 14,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  detailValue: {
+  serviceType: {
     fontSize: 16,
     color: '#1e293b',
+    fontWeight: '500',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusText: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });
+
+export default App;

@@ -261,8 +261,8 @@ useEffect(() => {
         <Header style={styles.headerContainer}>
           <LinearGradient
             colors={[colors.primary, "#feb3b3"]}
-            start={[1, 1]}
-            end={[0, 0]}
+            start={[0, 0]}
+            end={[1, 1]}
             style={styles.headerGradient}
           >
             <View style={styles.headerTop}>

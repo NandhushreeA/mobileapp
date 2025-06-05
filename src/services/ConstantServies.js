@@ -38,7 +38,7 @@ export const checkoutURL = `${endpoint}/order_checkout/${db_name}/`;
 export const userTaskListURL = `${endpoint}/user_task/${db_name}/`;
 export const addLeadURL = `${endpoint}/add_lead/${db_name}/`;
 export const getCustomerListURL = `${endpoint}/customer_list/${db_name}/`;
-export const getCustomerDetailListURL = `${endpoint}/customer_detail_list/${db_name}/`;
+//export const getCustomerDetailListURL = `${endpoint}/customer_detail_list/${db_name}/`;
 export const getLeadListURL = `${endpoint}/lead_list/${db_name}/`;
 export const getLeadDataListURL = `${endpoint}/lead_data_list/${db_name}/`;
 export const addTaskURL = `${endpoint}/add_task/${db_name}/`;
@@ -50,7 +50,7 @@ export const getVariationNameListURL = `${endpoint}/variation_name_list/${db_nam
 export const getLeadStatusListURL = `${endpoint}/lead_status_list/${db_name}/`;
 export const getTaskTypeListURL = `${endpoint}/task_type_list/${db_name}/`;
 export const updateTaskInterestURL = `${endpoint}/update_task_interest/${db_name}/`;
-export const getOrderListURL = `${endpoint}/order_list/${db_name}/`;
+//export const getOrderListURL = `${endpoint}/order_list/${db_name}/`;
 export const updateTaskURL = `${endpoint}/update_task/${db_name}/`;
 export const updateLeadStatusURL = `${endpoint}/update_lead_status/${db_name}/`;
 export const getUserListURL = `${endpoint}/user_list/${db_name}/`;
@@ -81,5 +81,23 @@ export const profileInfoURL = async () => {
    const db_name = await getDbName();
   return  `${endpoint}/profile_info/${db_name}/`;
 }
+
+export const getCustomerDetailListURL = 
+async()=>{
+  const db_name =await getDbName();
+return `${endpoint}/customer_detail_list/${db_name}/`;
+}
+
+export const OrderListURL = async () => {
+  const db_name = await getDbName();
+  return `${endpoint}/order_list/${db_name}/`;
+};
+export const addCustomerTicketURL = async()=>{
+  const db_name = await getDbName();
+  return `${endpoint}/process_customer_ticket/${db_name}/`;
+
+}
+
+
 
 export const getDbList = `${endpoint}/get_applicable_site/`;

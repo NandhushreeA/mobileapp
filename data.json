@@ -1,0 +1,24 @@
+{
+  "customerName": "John Doe",
+  "invoiceNumber": "INV-2024-001",
+  "warrantyDetails": {
+    "warrantyFromDate": "2024-03-15",
+    "warrantyDueDate": "2025-03-15",
+    "status": "Active",
+    "productName": "Solar Panel X1",
+    "modelNumber": "SP-X1-2024",
+    "installationDate": "2024-03-15",
+    "serviceHistory": [
+      {
+        "date": "2024-04-15",
+        "type": "Regular Maintenance",
+        "status": "Completed"
+      },
+      {
+        "date": "2024-05-15",
+        "type": "Inspection",
+        "status": "Scheduled"
+      }
+    ]
+  }
+}
