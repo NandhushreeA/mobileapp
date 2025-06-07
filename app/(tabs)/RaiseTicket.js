@@ -1,77 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   SafeAreaView,
-  TextInput,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors } from '../../src/Styles/appStyle';
 import HeaderComponent from '../../src/screens/HeaderComponent';
 import { useRouter } from 'expo-router';
-import { submitCustomerTicket } from '../../src/services/productServices';
+import { category_list } from '../../src/services/productServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Card } from 'react-native-paper';
 
 const RaiseTicket = () => {
   const router = useRouter();
-  const [subject, setSubject] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState('medium'); // low, medium, high
-  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = async () => {
-    if (!subject.trim() || !description.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
-    }
-
-    setLoading(true);
+  const fetchCategories = async () => {
     try {
-      const customer_id = await AsyncStorage.getItem('Customer_id');
-      if (!customer_id) {
-        throw new Error('Customer ID not found. Cannot submit ticket.');
+      // Get ALL data
+      const allData = await AsyncStorage.getItem('ALL');
+      if (!allData) {
+        throw new Error('Customer data not found');
       }
 
-      const formData = new FormData();
-      formData.append('cust_id', customer_id);
-      formData.append('Call_mode', 'TICKET_UPDATE');
-      formData.append('remarks', formState.description.trim());
-      formData.append('task_id', RaiseTicket.id.toString());
-      // You might need to append other fields like 'call_mode' or 'task_id' if required by the API
-      // based on the image, 'call_mode' and 'task_id' are appended for 'TICKET_UPDATE'.
-      // For creating a new ticket, these might be different or not needed.
-      // Let's start with the essential fields and add more if the API requires.
+      const parsedData = JSON.parse(allData);
+      const customer_id = parsedData?.customer_id;
+      
+      if (!customer_id) {
+        throw new Error('Customer ID not found in data');
+      }
 
-
-      const response = await submitCustomerTicket(formData);
-
-      if (response.data.success) {
-        Alert.alert(
-          'Success',
-          'Your ticket has been submitted successfully',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.back()
-            }
-          ]
-        );
+      // Call category_list with both ALL data and customer_id
+      const response = await category_list("ALL", customer_id);
+      console.log('Categories response:', response.data);
+      if (response.data) {
+        setCategories(response.data || []);
       } else {
-        // Assuming the API returns a message in case of failure
-        const errorMessage = response.data.message || response.data.error || 'Failed to submit ticket';
-        throw new Error(errorMessage);
+        throw new Error(response.data.message || 'Failed to fetch categories');
       }
     } catch (error) {
-      console.error('Ticket submission error:', error);
-      Alert.alert('Error', error.message || 'Failed to submit ticket. Please try again.');
+      console.error('Error fetching categories:', error.message);
+      Alert.alert('Error', error.message || 'Failed to fetch categories');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchCategories();
+  };
+
+  const renderCategoryItem = ({ item }) => (
+    <Card style={styles.categoryCard}>
+      <Card.Content>
+        <Text style={styles.name}>{item.name}</Text>
+      </Card.Content>
+    </Card>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,76 +80,33 @@ const RaiseTicket = () => {
         headerTitle="Raise a Ticket"
         onBackPress={() => router.back()}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.formContainer}>
-          {/* Subject Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Subject *</Text>
-            <TextInput
-              style={styles.input}
-              value={subject}
-              onChangeText={setSubject}
-              placeholder="Brief description of the issue"
-              placeholderTextColor={colors.textSecondary}
-            />
-          </View>
-
-          {/* Description Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Description *</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Please provide detailed information about your issue"
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-            />
-          </View>
-
-          {/* Priority Selection */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Priority</Text>
-            <View style={styles.priorityContainer}>
-              {['low', 'medium', 'high'].map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  style={[
-                    styles.priorityButton,
-                    priority === level && styles.priorityButtonActive,
-                    { backgroundColor: priority === level ? colors.primary : colors.background }
-                  ]}
-                  onPress={() => setPriority(level)}
-                >
-                  <Text
-                    style={[
-                      styles.priorityButtonText,
-                      { color: priority === level ? colors.white : colors.textPrimary }
-                    ]}
-                  >
-                    {level.charAt(0).toUpperCase() + level.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <Text style={styles.submitButtonText}>Submitting...</Text>
-            ) : (
-              <Text style={styles.submitButtonText}>Submit Ticket</Text>
-            )}
-          </TouchableOpacity>
+      
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading categories...</Text>
         </View>
-      </ScrollView>
+      ) : error ? (
+        <View style={styles.emptyContainer}>
+          <MaterialIcons name="error" size={48} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : categories.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <MaterialIcons name="category" size={48} color={colors.textSecondary} />
+          <Text style={styles.emptyText}>No categories available</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={categories}
+          renderItem={renderCategoryItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.parent_type_}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -158,75 +116,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundDark,
   },
-  scrollView: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  scrollContent: {
-    padding: 16,
-  },
-  formContainer: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 8,
   },
-  input: {
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.error,
+    textAlign: 'center',
+  },
+  listContainer: {
+    padding: 16,
+  },
+  categoryCard: {
+    marginBottom: 12,
     backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.muted,
-    borderRadius: 8,
-    padding: 12,
+  },
+  categoryName: {
     fontSize: 16,
     color: colors.textPrimary,
   },
-  textArea: {
-    height: 120,
-    paddingTop: 12,
-  },
-  priorityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  priorityButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.muted,
-  },
-  priorityButtonActive: {
-    borderColor: colors.primary,
-  },
-  priorityButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
-  },
-  submitButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
 });
 
-export default RaiseTicket; 
+export default RaiseTicket;

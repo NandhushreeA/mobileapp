@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, userLoginURL, setUserPinURL, getCustomerDetailListURL, OrderListURL, addCustomerTicketURL,   } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, userLoginURL, setUserPinURL, getCustomerDetailListURL, OrderListURL, addCustomerTicketURL, userTaskListURL, getTaskcategoryURL,   } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost, authAxiosPosts } from "./HttpMethod";
 
 export function getEmpLeave(leave_type , emp_id, year) {
@@ -185,4 +185,27 @@ export async function submitCustomerTicket(formData) {
         const userMessage = error.response?.data?.message || error.message || 'Failed to submit ticket';
         throw new Error(userMessage);
     }
+}
+export async function ticket_list(ALL,customer_id) {
+  try {
+    const url = await userTaskListURL();
+    if (!url) {
+      throw new Error('Failed to get ticket list URL');
+    }
+     const data = {
+      customer_id: customer_id.toString(),
+      task_type: ALL, // only if ALL is used
+    };
+    const response = await authAxios(url, data);
+    return response;
+  } catch (error) {
+    console.error('Error in ticket_list:', error);
+    throw error;
+  }
+}
+export async function category_list(all, customer_id) {
+  const url = await getTaskcategoryURL(); 
+  const data = { customer_id }; 
+  const response = await authAxios(url, data); 
+  return response;
 }

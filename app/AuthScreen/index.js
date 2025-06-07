@@ -232,6 +232,15 @@ useEffect(() => {
         const Customer_id = response.data?.customer_id;
         await AsyncStorage.setItem("Customer_id", Customer_id.toString());
         await AsyncStorage.setItem("userToken", userToken);
+        
+        // Store ALL data
+        const allData = {
+          customer_id: Customer_id.toString(),
+          mobile_number: mobileNumber,
+          token: userToken
+        };
+        await AsyncStorage.setItem("ALL", JSON.stringify(allData));
+        
         router.push("/home");
       } else {
         setErrorMessage("Invalid User id or Password");

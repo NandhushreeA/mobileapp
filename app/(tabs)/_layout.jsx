@@ -37,6 +37,12 @@ const _layout = () => {
         headerShown:false,
         tabBarIcon:({color})=><MaterialIcons name="support-agent" size={24} color={color} />
         }}/>
+        <Tabs.Screen name='MyTickets'
+        options={{
+        title:'My Tickets',
+        headerShown:false,
+        tabBarIcon:({color})=><MaterialIcons name="list-alt" size={24} color={color} />
+        }}/>
         <Tabs.Screen name='profile'
         options={{
         title:'Profile',

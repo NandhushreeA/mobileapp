@@ -35,7 +35,7 @@ export const resetPasswordURL = `${endpoint}/reset_password/${db_name}/`;
 export const resetPasswordConfirmURL = `${endpoint}/reset_password_confirm/`;
 export const changePasswordURL = `${endpoint}/change_password/`;
 export const checkoutURL = `${endpoint}/order_checkout/${db_name}/`;
-export const userTaskListURL = `${endpoint}/user_task/${db_name}/`;
+//export const userTaskListURL = `${endpoint}/user_task/${db_name}/`;
 export const addLeadURL = `${endpoint}/add_lead/${db_name}/`;
 export const getCustomerListURL = `${endpoint}/customer_list/${db_name}/`;
 //export const getCustomerDetailListURL = `${endpoint}/customer_detail_list/${db_name}/`;
@@ -95,9 +95,13 @@ export const OrderListURL = async () => {
 export const addCustomerTicketURL = async()=>{
   const db_name = await getDbName();
   return `${endpoint}/process_customer_ticket/${db_name}/`;
-
 }
-
-
-
+export const userTaskListURL = async()=>{
+  const db_name = await getDbName();
+  return `${endpoint}/user_task/${db_name}/`;
+}
+export const getTaskcategoryURL = async()=>{
+  const db_name = await getDbName();
+  return `${endpoint}/get_task_category/${db_name}/`;
+}
 export const getDbList = `${endpoint}/get_applicable_site/`;
